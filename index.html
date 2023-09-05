@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Include the Chart.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <title>Ultrasonic Distance</title>
+  </head>
+  <body>
+    <h1>Ultrasonic Sensor Reading</h1>
+  
+    <div style="width: 80%; margin: auto;">
+      <!-- Create a canvas element for the chart -->
+      <canvas id="sensorChart" width="350" height="170"></canvas>
+    </div>
+  
+    <!-- JavaScript code for updating the chart -->
+    <script>
+      // Initialize an empty array to store sensor readings
+      let sensorData = [];
+  
+      // Initialize the Chart.js chart
+      let ctx = document.getElementById("sensorChart").getContext("2d");
+      let chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [], // X-axis labels (empty initially)
+          datasets: [
+            {
+              label: "Distance (cm)",
+              data: [], // Y-axis data (empty initially)
+              borderColor: "blue",
+              borderWidth: 2,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 150, // Set the Y-axis maximum value
+            },
+          },
+        },
+      });
+  
+      // Function to update the chart with new data
+      function updateChart(newData) {
+        sensorData.push(newData);
+  
+        // Keep only the last 10 data points
+        if (sensorData.length > 10) {
+          sensorData.shift();
+        }
+  
+        // Update the chart labels and data
+        chart.data.labels = sensorData.map((data, index) => index);
+        chart.data.datasets[0].data = sensorData;
+  
+        // Update the chart
+        chart.update();
+      }
+  
+      // Function to fetch and update the distance data
+      function updateDistance() {
+        fetch("http://192.168.43.93/hh") // Replace with your ESP8266 server URL
+          .then(response => response.text())
+          .then(data => {
+            // Parse the data as a float (assuming it's a number)
+            const distance = parseFloat(data);
+  
+            // Check if the parsed value is a valid number
+            if (!isNaN(distance)) {
+              updateChart(distance);
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching data:", error);
+          });
+      }
+  
+      // Periodically update the distance and chart (every 1 second)
+      setInterval(updateDistance, 1000);
+    </script>
+  </body>
+<body>
+    <head>
+        <title>RGB LED Control</title>
+        <style>
+            /* Style for the color preview box */
+            #color-preview {
+              width: 130px;
+              height: 130px;
+              background-color: rgb(0, 0, 0); /* Initial color is black */
+              margin: 20px auto;
+            }
+          </style>
+      </head>
+  <h1>RGB LED Control</h1>
+    <form>
+  <label for="redSlider">Red:</label>
+  <input type="range" id="redSlider" min="0" max="255" value="0">
+  <br>
+
+  <!-- Green slider -->
+  <label for="greenSlider">Green:</label>
+  <input type="range" id="greenSlider" min="0" max="255" value="0">
+  <br>
+
+  <!-- Blue slider -->
+  <label for="blueSlider">Blue:</label>
+  <input type="range" id="blueSlider" min="0" max="255" value="0">
+  <br>
+
+  <input type="button" value="Set Color" onclick="setColor()">
+</form>
+  <!-- Color preview box -->
+  <div id="color-preview"></div>
+
+  <script>
+    var redSlider = document.getElementById("redSlider");
+    var greenSlider = document.getElementById("greenSlider");
+    var blueSlider = document.getElementById("blueSlider");
+    var colorPreview = document.getElementById("color-preview");
+
+    // Function to update the color preview
+    function updateColorPreview() {
+      var redt = redSlider.value;
+      var greent = greenSlider.value;
+      var bluet = blueSlider.value;
+
+      var rgbColor = `rgb(${redt}, ${greent}, ${bluet})`;
+      colorPreview.style.backgroundColor = rgbColor;
+    }
+
+    // Add event listeners to update the color preview when sliders change
+    redSlider.addEventListener("input", updateColorPreview);
+    greenSlider.addEventListener("input", updateColorPreview);
+    blueSlider.addEventListener("input", updateColorPreview);
+
+    function setColor() {
+      var red = document.getElementById("redSlider").value;
+      var green = document.getElementById("greenSlider").value;
+      var blue = document.getElementById("blueSlider").value;
+
+      // Send the color values to the ESP8266
+      fetch("http://192.168.43.93/setcolor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "red=" + red + "&green=" + green + "&blue=" + blue,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          console.log("RGB LED color set successfully");
+        })
+        .catch((error) => {
+          console.error("Error setting RGB LED color:", error);
+        });
+    }
+    //setInterval(setColor, 3000);
+  </script>
+</body>
+</html>
